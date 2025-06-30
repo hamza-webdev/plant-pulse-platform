@@ -7,10 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import type { User, Session } from '@supabase/supabase-js';
-import PlantCard from "@/components/PlantCard";
 import AddPlantModal from "@/components/AddPlantModal";
 import ProfileModal from "@/components/ProfileModal";
 import WeatherWidget from "@/components/WeatherWidget";
+import EnhancedPlantCard from "@/components/EnhancedPlantCard";
 
 interface Plant {
   id: string;
@@ -391,7 +391,7 @@ const Dashboard = () => {
           Ajouter une plante
         </Button>
 
-        {/* Section Plantes */}
+        {/* Section Plantes avec le nouveau composant */}
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Mes Plantes</h2>
@@ -420,7 +420,7 @@ const Dashboard = () => {
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {plants.map((plant) => (
-                <PlantCard key={plant.id} plant={plant} />
+                <EnhancedPlantCard key={plant.id} plant={plant} />
               ))}
             </div>
           )}
