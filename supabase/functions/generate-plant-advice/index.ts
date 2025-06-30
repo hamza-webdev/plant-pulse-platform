@@ -15,14 +15,48 @@ serve(async (req) => {
   }
 
   try {
-    const { plantName, variety, plantingDate, location, status } = await req.json();
+    const { plantName, variety, plantingDate, location, status, measurements, temperature } = await req.json();
+
+    console.log('Received plant data:', { plantName, variety, plantingDate, location, status, measurements, temperature });
 
     // Calculer l'âge de la plante
     const planted = new Date(plantingDate);
     const today = new Date();
     const daysSincePlanted = Math.ceil((today.getTime() - planted.getTime()) / (1000 * 60 * 60 * 24));
 
-    const prompt = `En tant qu'expert en jardinage, donne un conseil court et pratique (maximum 2 phrases) pour une plante ${plantName} de variété ${variety}, plantée il y a ${daysSincePlanted} jours, située en ${location}, avec un statut "${status}". Le conseil doit être spécifique à la saison actuelle et à l'âge de la plante.`;
+    // Préparer les informations de mesures
+    let measurementInfo = "Aucune mesure disponible";
+    if (measurements && measurements.length > 0) {
+      const latestMeasurement = measurements[0]; // La plus récente
+      const parts = [];
+      if (latestMeasurement.height) parts.push(`hauteur: ${latestMeasurement.height}cm`);
+      if (latestMeasurement.width) parts.push(`largeur: ${latestMeasurement.width}cm`);
+      measurementInfo = parts.length > 0 ? parts.join(', ') : "Mesures non spécifiées";
+    }
+
+    // Préparer l'information de température
+    const tempInfo = temperature ? `${temperature}°C` : "température inconnue";
+
+    const prompt = `En tant qu'expert en jardinage, analyse cette plante et donne un diagnostic complet :
+
+Informations de la plante :
+- Nom : ${plantName}
+- Variété/Catégorie : ${variety}
+- Âge : ${daysSincePlanted} jours (plantée le ${new Date(plantingDate).toLocaleDateString('fr-FR')})
+- Localisation : ${location}
+- Statut actuel : ${status}
+- Mesures actuelles : ${measurementInfo}
+- Température ambiante : ${tempInfo}
+
+Donne-moi un diagnostic en 3-4 phrases qui inclut :
+1. L'état général de la plante basé sur son âge et ses mesures
+2. Des conseils spécifiques selon la température et la saison
+3. Des recommandations d'arrosage et de soins
+4. Ce à quoi s'attendre pour les prochaines semaines
+
+Réponds en français de manière claire et pratique.`;
+
+    console.log('Sending prompt to OpenAI:', prompt);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -35,16 +69,26 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'Tu es un expert en jardinage. Donne des conseils courts, pratiques et spécifiques. Réponds toujours en français.' 
+            content: 'Tu es un expert en jardinage avec 20 ans d\'expérience. Donne des conseils précis, pratiques et adaptés à chaque situation. Utilise un ton bienveillant et professionnel. Réponds toujours en français.' 
           },
           { role: 'user', content: prompt }
         ],
-        max_tokens: 150,
+        max_tokens: 200,
         temperature: 0.7,
       }),
     });
 
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
     const data = await response.json();
+    console.log('OpenAI response:', data);
+
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error('Invalid response format from OpenAI');
+    }
+
     const advice = data.choices[0].message.content;
 
     return new Response(JSON.stringify({ advice }), {
@@ -52,7 +96,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error generating plant advice:', error);
-    return new Response(JSON.stringify({ error: 'Impossible de générer le conseil' }), {
+    return new Response(JSON.stringify({ error: 'Impossible de générer le conseil pour le moment. Veuillez réessayer.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
