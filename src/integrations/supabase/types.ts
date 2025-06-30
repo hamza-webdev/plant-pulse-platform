@@ -339,6 +339,65 @@ export type Database = {
           },
         ]
       }
+      plante_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          nom: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      plante_noms: {
+        Row: {
+          categorie_id: string
+          created_at: string
+          description: string | null
+          id: string
+          nom: string
+          updated_at: string
+        }
+        Insert: {
+          categorie_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom: string
+          updated_at?: string
+        }
+        Update: {
+          categorie_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plante_noms_categorie_id_fkey"
+            columns: ["categorie_id"]
+            isOneToOne: false
+            referencedRelation: "plante_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plante_profile: {
         Row: {
           address: string | null
