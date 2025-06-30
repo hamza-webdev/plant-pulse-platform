@@ -26,6 +26,7 @@ interface ProfileData {
 
 const ProfileModal = ({ isOpen, onClose, user }: ProfileModalProps) => {
   const [loading, setLoading] = useState(false);
+  const [existingProfile, setExistingProfile] = useState<any>(null);
   const [profileData, setProfileData] = useState<ProfileData>({
     full_name: "",
     phone: "",
@@ -48,11 +49,12 @@ const ProfileModal = ({ isOpen, onClose, user }: ProfileModalProps) => {
         .from('plante_profile')
         .select('*')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error);
       } else if (data) {
+        setExistingProfile(data);
         setProfileData({
           full_name: data.full_name || "",
           phone: data.phone || "",
@@ -61,6 +63,8 @@ const ProfileModal = ({ isOpen, onClose, user }: ProfileModalProps) => {
           longitude: data.longitude?.toString() || "",
           avatar_url: data.avatar_url || ""
         });
+      } else {
+        setExistingProfile(null);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -122,9 +126,22 @@ const ProfileModal = ({ isOpen, onClose, user }: ProfileModalProps) => {
         updated_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
-        .from('plante_profile')
-        .upsert(updateData);
+      let error;
+
+      if (existingProfile) {
+        // Mise à jour du profil existant
+        const result = await supabase
+          .from('plante_profile')
+          .update(updateData)
+          .eq('user_id', user?.id);
+        error = result.error;
+      } else {
+        // Création d'un nouveau profil
+        const result = await supabase
+          .from('plante_profile')
+          .insert(updateData);
+        error = result.error;
+      }
 
       if (error) {
         console.error('Profile update error:', error);
