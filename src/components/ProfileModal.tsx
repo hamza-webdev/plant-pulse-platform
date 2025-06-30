@@ -45,9 +45,9 @@ const ProfileModal = ({ isOpen, onClose, user }: ProfileModalProps) => {
   const fetchProfile = async () => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('plante_profile')
         .select('*')
-        .eq('id', user?.id)
+        .eq('user_id', user?.id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -112,6 +112,7 @@ const ProfileModal = ({ isOpen, onClose, user }: ProfileModalProps) => {
 
     try {
       const updateData = {
+        user_id: user?.id,
         full_name: profileData.full_name,
         phone: profileData.phone,
         address: profileData.address,
@@ -122,14 +123,11 @@ const ProfileModal = ({ isOpen, onClose, user }: ProfileModalProps) => {
       };
 
       const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user?.id,
-          email: user?.email,
-          ...updateData
-        });
+        .from('plante_profile')
+        .upsert(updateData);
 
       if (error) {
+        console.error('Profile update error:', error);
         toast({
           title: "Erreur",
           description: "Impossible de sauvegarder le profil",
