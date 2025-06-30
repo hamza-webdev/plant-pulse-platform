@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -79,11 +80,10 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
 
   const fetchWateringHistory = async () => {
     try {
-      const { data, error } = await supabase
-        .from('plant_watering' as any)
-        .select('*')
-        .eq('plant_id', plant.id)
-        .order('watering_date', { ascending: false });
+      // Use a raw query with proper type casting
+      const { data, error } = await supabase.rpc('get_plant_watering', {
+        plant_uuid: plant.id
+      });
 
       if (error) {
         console.error('Error fetching watering history:', error);
@@ -99,11 +99,10 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
 
   const fetchMeasurementHistory = async () => {
     try {
-      const { data, error } = await supabase
-        .from('plant_measurements' as any)
-        .select('*')
-        .eq('plant_id', plant.id)
-        .order('measurement_date', { ascending: false });
+      // Use a raw query with proper type casting
+      const { data, error } = await supabase.rpc('get_plant_measurements', {
+        plant_uuid: plant.id
+      });
 
       if (error) {
         console.error('Error fetching measurement history:', error);
@@ -150,14 +149,12 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
     }
 
     try {
-      const { error } = await supabase
-        .from('plant_measurements' as any)
-        .insert([{
-          plant_id: plant.id,
-          height: measurements.height ? parseInt(measurements.height) : null,
-          width: measurements.width ? parseInt(measurements.width) : null,
-          notes: measurements.notes || null
-        }]);
+      const { error } = await supabase.rpc('add_plant_measurement', {
+        plant_uuid: plant.id,
+        height_cm: measurements.height ? parseInt(measurements.height) : null,
+        width_cm: measurements.width ? parseInt(measurements.width) : null,
+        note_text: measurements.notes || null
+      });
 
       if (error) {
         console.error('Error saving measurement:', error);
@@ -192,13 +189,11 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
     }
 
     try {
-      const { error } = await supabase
-        .from('plant_watering' as any)
-        .insert([{
-          plant_id: plant.id,
-          amount: parseInt(watering.amount),
-          notes: watering.notes || null
-        }]);
+      const { error } = await supabase.rpc('add_plant_watering', {
+        plant_uuid: plant.id,
+        amount_ml: parseInt(watering.amount),
+        note_text: watering.notes || null
+      });
 
       if (error) {
         console.error('Error saving watering:', error);
