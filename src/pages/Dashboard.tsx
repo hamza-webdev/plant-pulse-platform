@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -235,7 +236,9 @@ const Dashboard = () => {
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Nabtati</h1>
                 <div className="flex items-center space-x-1">
-                  <p className="text-xs text-gray-600">Tableau de bord</p>
+                  <p className="text-xs text-gray-600">
+                    Bonjour {userProfile?.full_name || user?.email?.split('@')[0] || 'Utilisateur'}
+                  </p>
                   {userProfile?.city && userProfile?.country && (
                     <>
                       <span className="text-xs text-gray-400">•</span>
