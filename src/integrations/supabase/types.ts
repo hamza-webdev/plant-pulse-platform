@@ -207,6 +207,121 @@ export type Database = {
           },
         ]
       }
+      plant_photos: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_primary: boolean | null
+          photo_url: string
+          plant_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_primary?: boolean | null
+          photo_url: string
+          plant_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_primary?: boolean | null
+          photo_url?: string
+          plant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plant_photos_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plant_varieties: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      plants: {
+        Row: {
+          created_at: string
+          custom_variety: string | null
+          growth: number | null
+          id: string
+          location: string | null
+          name: string
+          notes: string | null
+          planting_date: string | null
+          purchase_price: number | null
+          status: string | null
+          updated_at: string
+          user_id: string
+          variety_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          custom_variety?: string | null
+          growth?: number | null
+          id?: string
+          location?: string | null
+          name: string
+          notes?: string | null
+          planting_date?: string | null
+          purchase_price?: number | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          variety_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          custom_variety?: string | null
+          growth?: number | null
+          id?: string
+          location?: string | null
+          name?: string
+          notes?: string | null
+          planting_date?: string | null
+          purchase_price?: number | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+          variety_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plants_variety_id_fkey"
+            columns: ["variety_id"]
+            isOneToOne: false
+            referencedRelation: "plant_varieties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           bio: string | null
@@ -254,25 +369,43 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
+          avatar_url: string | null
           created_at: string | null
           email: string | null
           full_name: string | null
           id: string
+          latitude: number | null
+          longitude: number | null
+          phone: string | null
           role: Database["public"]["Enums"]["user_role"] | null
+          updated_at: string | null
         }
         Insert: {
+          address?: string | null
+          avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           id: string
+          latitude?: number | null
+          longitude?: number | null
+          phone?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string | null
         }
         Update: {
+          address?: string | null
+          avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
+          phone?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          updated_at?: string | null
         }
         Relationships: []
       }
