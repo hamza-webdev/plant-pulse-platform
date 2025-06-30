@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,9 +8,20 @@ import WeatherWidget from "@/components/WeatherWidget";
 import AddPlantModal from "@/components/AddPlantModal";
 import { useToast } from "@/hooks/use-toast";
 
+interface Plant {
+  id: number;
+  name: string;
+  variety: string;
+  plantingDate: string;
+  location: string;
+  lastPhoto: string;
+  growth: number;
+  status: "healthy" | "needs-water" | "attention";
+}
+
 const Index = () => {
   const [isAddPlantOpen, setIsAddPlantOpen] = useState(false);
-  const [plants, setPlants] = useState([
+  const [plants, setPlants] = useState<Plant[]>([
     {
       id: 1,
       name: "Tomates Cerises",
@@ -20,7 +30,7 @@ const Index = () => {
       location: "Jardin Principal",
       lastPhoto: "/placeholder.svg",
       growth: 25,
-      status: "healthy"
+      status: "healthy" as const
     },
     {
       id: 2,
@@ -30,18 +40,18 @@ const Index = () => {
       location: "Serre",
       lastPhoto: "/placeholder.svg",
       growth: 15,
-      status: "needs-water"
+      status: "needs-water" as const
     }
   ]);
 
   const { toast } = useToast();
 
   const handleAddPlant = (plantData: any) => {
-    const newPlant = {
+    const newPlant: Plant = {
       id: plants.length + 1,
       ...plantData,
       growth: 0,
-      status: "healthy"
+      status: "healthy" as const
     };
     setPlants([...plants, newPlant]);
     setIsAddPlantOpen(false);
