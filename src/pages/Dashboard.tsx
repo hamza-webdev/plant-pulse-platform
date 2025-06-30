@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, User as UserIcon, LogOut, Settings } from "lucide-react";
+import { Plus, User as UserIcon, LogOut, Settings, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -24,10 +23,18 @@ interface Plant {
   status: "healthy" | "needs-water" | "attention";
 }
 
+interface UserProfile {
+  full_name: string;
+  address: string;
+  city?: string;
+  country?: string;
+}
+
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [plants, setPlants] = useState<Plant[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isAddPlantOpen, setIsAddPlantOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -65,8 +72,49 @@ const Dashboard = () => {
   useEffect(() => {
     if (user) {
       fetchPlants();
+      fetchUserProfile();
     }
   }, [user]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('plante_profile')
+        .select('full_name, address')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching profile:', error);
+      } else if (data) {
+        // Extraire la ville et le pays de l'adresse
+        const address = data.address || '';
+        let city = '';
+        let country = '';
+        
+        if (address) {
+          // Essayer de parser l'adresse pour extraire ville et pays
+          const parts = address.split(',').map(part => part.trim());
+          if (parts.length >= 2) {
+            // Prendre les deux derniers éléments comme ville et pays
+            country = parts[parts.length - 1];
+            city = parts[parts.length - 2];
+          } else if (parts.length === 1) {
+            city = parts[0];
+          }
+        }
+        
+        setUserProfile({
+          full_name: data.full_name || '',
+          address: data.address || '',
+          city,
+          country
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
 
   const fetchPlants = async () => {
     try {
@@ -186,7 +234,20 @@ const Dashboard = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Nabtati</h1>
-                <p className="text-xs text-gray-600">Tableau de bord</p>
+                <div className="flex items-center space-x-1">
+                  <p className="text-xs text-gray-600">Tableau de bord</p>
+                  {userProfile?.city && userProfile?.country && (
+                    <>
+                      <span className="text-xs text-gray-400">•</span>
+                      <div className="flex items-center space-x-1">
+                        <MapPin className="w-3 h-3 text-gray-500" />
+                        <p className="text-xs text-gray-600">
+                          {userProfile.city}, {userProfile.country}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center space-x-2">
@@ -284,7 +345,13 @@ const Dashboard = () => {
 
       <ProfileModal
         isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
+        onClose={() => {
+          setIsProfileOpen(false);
+          // Recharger le profil après fermeture du modal
+          if (user) {
+            fetchUserProfile();
+          }
+        }}
         user={user}
       />
     </div>
