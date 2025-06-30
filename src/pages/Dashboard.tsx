@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,15 +13,14 @@ import ProfileModal from "@/components/ProfileModal";
 import WeatherWidget from "@/components/WeatherWidget";
 
 interface Plant {
-  id: string;
+  id: number;
   name: string;
-  variety_name?: string;
-  custom_variety?: string;
-  planting_date?: string;
-  location?: string;
+  variety: string;
+  plantingDate: string;
+  location: string;
+  lastPhoto: string;
   growth: number;
-  status: string;
-  photos?: Array<{ photo_url: string; is_primary: boolean }>;
+  status: "healthy" | "needs-water" | "attention";
 }
 
 const Dashboard = () => {
@@ -89,9 +87,15 @@ const Dashboard = () => {
         });
       } else {
         const plantsWithPhotos = data?.map(plant => ({
-          ...plant,
-          variety_name: plant.plant_varieties?.name,
-          photos: plant.plant_photos || []
+          id: parseInt(plant.id),
+          name: plant.name,
+          variety: plant.plant_varieties?.name || plant.custom_variety || 'Variété inconnue',
+          plantingDate: plant.planting_date || new Date().toISOString().split('T')[0],
+          location: plant.location || 'Non spécifié',
+          lastPhoto: plant.plant_photos?.find(p => p.is_primary)?.photo_url || '/placeholder.svg',
+          growth: plant.growth || 0,
+          status: plant.status === 'healthy' ? 'healthy' : 
+                  plant.status === 'needs-water' ? 'needs-water' : 'attention'
         })) || [];
         setPlants(plantsWithPhotos);
       }
