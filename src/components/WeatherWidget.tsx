@@ -3,14 +3,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Thermometer, Droplets, Cloud, Sun, CloudRain, AlertTriangle } from "lucide-react";
 
-const WeatherWidget = () => {
+interface WeatherWidgetProps {
+  userCity?: string;
+  userCountry?: string;
+}
+
+const WeatherWidget = ({ userCity, userCountry }: WeatherWidgetProps) => {
+  // Utiliser la ville de l'utilisateur ou une valeur par défaut
+  const location = userCity && userCountry 
+    ? `${userCity}, ${userCountry}` 
+    : "Tunis, Tunisie";
+
   // Mock weather data - in a real app, this would come from OpenWeatherMap API
+  // Les données seraient récupérées en fonction de la localisation de l'utilisateur
   const currentWeather = {
     temperature: 24,
     humidity: 65,
     condition: "partly-cloudy",
-    location: "Tunis, Tunisie",
-    alerts: ["Forte chaleur prévue demain (+35°C)"]
+    location: location,
+    alerts: userCity ? [`Forte chaleur prévue demain à ${userCity} (+35°C)`] : ["Forte chaleur prévue demain (+35°C)"]
   };
 
   const forecast = [

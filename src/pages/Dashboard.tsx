@@ -274,7 +274,7 @@ const Dashboard = () => {
 
       <div className="px-4 py-6 space-y-6">
         {/* Section Météo */}
-        <WeatherWidget />
+        <WeatherWidget userCity={userProfile?.city} userCountry={userProfile?.country} />
 
         {/* Statistiques rapides */}
         <div className="grid grid-cols-2 gap-4">
