@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -75,22 +74,79 @@ const ProfileModal = ({ isOpen, onClose, user }: ProfileModalProps) => {
     setProfileData(prev => ({ ...prev, [field]: value }));
   };
 
+  const reverseGeocode = async (lat: number, lng: number) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=fr`
+      );
+      const data = await response.json();
+      
+      if (data && data.display_name) {
+        // Essayer de construire une adresse complète
+        const addressComponents = data.address || {};
+        let formattedAddress = "";
+        
+        // Construire l'adresse avec les composants disponibles
+        const houseNumber = addressComponents.house_number || "";
+        const road = addressComponents.road || "";
+        const city = addressComponents.city || addressComponents.town || addressComponents.village || "";
+        const postcode = addressComponents.postcode || "";
+        const country = addressComponents.country || "";
+        
+        if (houseNumber && road) {
+          formattedAddress = `${houseNumber} ${road}`;
+          if (city) formattedAddress += `, ${city}`;
+          if (postcode) formattedAddress += ` ${postcode}`;
+          if (country) formattedAddress += `, ${country}`;
+        } else if (city && country) {
+          formattedAddress = `${city}, ${country}`;
+        } else {
+          // Utiliser l'adresse complète fournie par l'API
+          formattedAddress = data.display_name;
+        }
+        
+        return formattedAddress;
+      }
+      return null;
+    } catch (error) {
+      console.error('Erreur de géocodage inversé:', error);
+      return null;
+    }
+  };
+
   const handleGetLocation = () => {
     if (navigator.geolocation) {
       setLoading(true);
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           const { latitude, longitude } = position.coords;
+          
+          // Mettre à jour les coordonnées
           setProfileData(prev => ({
             ...prev,
             latitude: latitude.toFixed(6),
             longitude: longitude.toFixed(6)
           }));
+          
+          // Essayer de récupérer l'adresse
+          const address = await reverseGeocode(latitude, longitude);
+          if (address) {
+            setProfileData(prev => ({
+              ...prev,
+              address: address
+            }));
+            toast({
+              title: "Position et adresse récupérées",
+              description: "Vos coordonnées GPS et votre adresse ont été mises à jour",
+            });
+          } else {
+            toast({
+              title: "Position récupérée",
+              description: "Vos coordonnées GPS ont été mises à jour (adresse non trouvée)",
+            });
+          }
+          
           setLoading(false);
-          toast({
-            title: "Position récupérée",
-            description: "Vos coordonnées GPS ont été mises à jour",
-          });
         },
         (error) => {
           setLoading(false);
