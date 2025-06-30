@@ -10,7 +10,7 @@ import AddPlantModal from "@/components/AddPlantModal";
 import { useToast } from "@/hooks/use-toast";
 
 interface Plant {
-  id: number;
+  id: string; // Changed from number to string
   name: string;
   variety: string;
   plantingDate: string;
@@ -24,7 +24,7 @@ const Index = () => {
   const [isAddPlantOpen, setIsAddPlantOpen] = useState(false);
   const [plants, setPlants] = useState<Plant[]>([
     {
-      id: 1,
+      id: "1", // Changed to string
       name: "Tomates Cerises",
       variety: "Cherry Roma",
       plantingDate: "2024-03-15",
@@ -34,7 +34,7 @@ const Index = () => {
       status: "healthy" as const
     },
     {
-      id: 2,
+      id: "2", // Changed to string
       name: "Basilic",
       variety: "Genovese",
       plantingDate: "2024-04-01",
@@ -49,7 +49,7 @@ const Index = () => {
 
   const handleAddPlant = (plantData: any) => {
     const newPlant: Plant = {
-      id: plants.length + 1,
+      id: (plants.length + 1).toString(), // Convert to string
       ...plantData,
       growth: 0,
       status: "healthy" as const

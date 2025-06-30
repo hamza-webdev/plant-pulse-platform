@@ -13,7 +13,7 @@ import ProfileModal from "@/components/ProfileModal";
 import WeatherWidget from "@/components/WeatherWidget";
 
 interface Plant {
-  id: number;
+  id: string; // Changed from number to string
   name: string;
   variety: string;
   plantingDate: string;
@@ -145,7 +145,7 @@ const Dashboard = () => {
           }
 
           return {
-            id: parseInt(plant.id),
+            id: plant.id, // Keep as string (UUID)
             name: plant.name,
             variety: plant.plant_varieties?.name || plant.custom_variety || 'Variété inconnue',
             plantingDate: plant.planting_date || new Date().toISOString().split('T')[0],

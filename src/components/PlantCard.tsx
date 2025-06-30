@@ -7,7 +7,7 @@ import { useState } from "react";
 import PlantDetailsModal from "./PlantDetailsModal";
 
 interface Plant {
-  id: number;
+  id: string; // Changed from number to string to match UUID
   name: string;
   variety: string;
   plantingDate: string;

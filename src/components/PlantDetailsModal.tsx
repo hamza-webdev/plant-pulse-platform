@@ -87,11 +87,13 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
 
       if (error) {
         console.error('Error fetching watering history:', error);
+        setWateringHistory([]);
       } else {
         setWateringHistory(data || []);
       }
     } catch (error) {
       console.error('Error:', error);
+      setWateringHistory([]);
     }
   };
 
@@ -105,11 +107,13 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
 
       if (error) {
         console.error('Error fetching measurement history:', error);
+        setMeasurementHistory([]);
       } else {
         setMeasurementHistory(data || []);
       }
     } catch (error) {
       console.error('Error:', error);
+      setMeasurementHistory([]);
     }
   };
 
@@ -123,11 +127,13 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
 
       if (error) {
         console.error('Error fetching photo history:', error);
+        setPhotoHistory([]);
       } else {
         setPhotoHistory(data || []);
       }
     } catch (error) {
       console.error('Error:', error);
+      setPhotoHistory([]);
     }
   };
 
