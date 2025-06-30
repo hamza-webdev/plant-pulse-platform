@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Plant {
-  id: number;
+  id: string; // Changed to string to match UUID
   name: string;
   variety: string;
   plantingDate: string;
@@ -81,7 +80,7 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
   const fetchWateringHistory = async () => {
     try {
       const { data, error } = await supabase
-        .from('plant_watering')
+        .from('plant_watering' as any)
         .select('*')
         .eq('plant_id', plant.id)
         .order('watering_date', { ascending: false });
@@ -99,7 +98,7 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
   const fetchMeasurementHistory = async () => {
     try {
       const { data, error } = await supabase
-        .from('plant_measurements')
+        .from('plant_measurements' as any)
         .select('*')
         .eq('plant_id', plant.id)
         .order('measurement_date', { ascending: false });
@@ -146,7 +145,7 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
 
     try {
       const { error } = await supabase
-        .from('plant_measurements')
+        .from('plant_measurements' as any)
         .insert([{
           plant_id: plant.id,
           height: measurements.height ? parseInt(measurements.height) : null,
@@ -155,6 +154,7 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
         }]);
 
       if (error) {
+        console.error('Error saving measurement:', error);
         toast({
           title: "Erreur",
           description: "Impossible d'enregistrer la mesure.",
@@ -187,7 +187,7 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
 
     try {
       const { error } = await supabase
-        .from('plant_watering')
+        .from('plant_watering' as any)
         .insert([{
           plant_id: plant.id,
           amount: parseInt(watering.amount),
@@ -195,6 +195,7 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
         }]);
 
       if (error) {
+        console.error('Error saving watering:', error);
         toast({
           title: "Erreur",
           description: "Impossible d'enregistrer l'arrosage.",
@@ -242,6 +243,7 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
         .upload(fileName, selectedFile);
 
       if (uploadError) {
+        console.error('Upload error:', uploadError);
         toast({
           title: "Erreur",
           description: "Impossible d'uploader la photo.",
@@ -263,6 +265,7 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
         }]);
 
       if (dbError) {
+        console.error('Database error:', dbError);
         toast({
           title: "Erreur",
           description: "Impossible d'enregistrer la photo en base.",
