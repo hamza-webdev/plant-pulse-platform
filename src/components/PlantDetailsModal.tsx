@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Droplets, Ruler, Calendar, TrendingUp, MapPin, Edit } from "lucide-react";
+import { Camera, Droplets, Ruler, Calendar, TrendingUp, MapPin, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Plant {
   id: number;
@@ -27,6 +28,28 @@ interface PlantDetailsModalProps {
   onClose: () => void;
 }
 
+interface WateringRecord {
+  id: string;
+  amount: number;
+  notes: string;
+  watering_date: string;
+}
+
+interface MeasurementRecord {
+  id: string;
+  height: number;
+  width: number;
+  notes: string;
+  measurement_date: string;
+}
+
+interface PhotoRecord {
+  id: string;
+  photo_url: string;
+  description: string;
+  created_at: string;
+}
+
 const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) => {
   const [measurements, setMeasurements] = useState({
     height: "",
@@ -36,28 +59,228 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
 
   const [watering, setWatering] = useState({
     amount: "",
-    frequency: "daily",
     notes: ""
   });
 
+  const [wateringHistory, setWateringHistory] = useState<WateringRecord[]>([]);
+  const [measurementHistory, setMeasurementHistory] = useState<MeasurementRecord[]>([]);
+  const [photoHistory, setPhotoHistory] = useState<PhotoRecord[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
   const { toast } = useToast();
 
-  const handleMeasurementSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast({
-      title: "Mesures enregistrées",
-      description: `Nouvelles mesures ajoutées pour ${plant.name}.`,
-    });
-    setMeasurements({ height: "", width: "", notes: "" });
+  useEffect(() => {
+    if (isOpen) {
+      fetchWateringHistory();
+      fetchMeasurementHistory();
+      fetchPhotoHistory();
+    }
+  }, [isOpen, plant.id]);
+
+  const fetchWateringHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('plant_watering')
+        .select('*')
+        .eq('plant_id', plant.id)
+        .order('watering_date', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching watering history:', error);
+      } else {
+        setWateringHistory(data || []);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
   };
 
-  const handleWateringSubmit = (e: React.FormEvent) => {
+  const fetchMeasurementHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('plant_measurements')
+        .select('*')
+        .eq('plant_id', plant.id)
+        .order('measurement_date', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching measurement history:', error);
+      } else {
+        setMeasurementHistory(data || []);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  const fetchPhotoHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('plant_photos')
+        .select('*')
+        .eq('plant_id', plant.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching photo history:', error);
+      } else {
+        setPhotoHistory(data || []);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  const handleMeasurementSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Arrosage enregistré",
-      description: `Arrosage de ${plant.name} enregistré avec succès.`,
-    });
-    setWatering({ amount: "", frequency: "daily", notes: "" });
+    
+    if (!measurements.height && !measurements.width) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez entrer au moins une mesure.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('plant_measurements')
+        .insert([{
+          plant_id: plant.id,
+          height: measurements.height ? parseInt(measurements.height) : null,
+          width: measurements.width ? parseInt(measurements.width) : null,
+          notes: measurements.notes || null
+        }]);
+
+      if (error) {
+        toast({
+          title: "Erreur",
+          description: "Impossible d'enregistrer la mesure.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Mesures enregistrées",
+          description: `Nouvelles mesures ajoutées pour ${plant.name}.`,
+        });
+        setMeasurements({ height: "", width: "", notes: "" });
+        fetchMeasurementHistory();
+      }
+    } catch (error) {
+      console.error('Error saving measurement:', error);
+    }
+  };
+
+  const handleWateringSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!watering.amount) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez entrer la quantité d'eau.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('plant_watering')
+        .insert([{
+          plant_id: plant.id,
+          amount: parseInt(watering.amount),
+          notes: watering.notes || null
+        }]);
+
+      if (error) {
+        toast({
+          title: "Erreur",
+          description: "Impossible d'enregistrer l'arrosage.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Arrosage enregistré",
+          description: `Arrosage de ${plant.name} enregistré avec succès.`,
+        });
+        setWatering({ amount: "", notes: "" });
+        fetchWateringHistory();
+      }
+    } catch (error) {
+      console.error('Error saving watering:', error);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const handlePhotoUpload = async () => {
+    if (!selectedFile) return;
+
+    setIsUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Erreur",
+          description: "Vous devez être connecté pour uploader une photo.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${user.id}/${plant.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('plant-photos')
+        .upload(fileName, selectedFile);
+
+      if (uploadError) {
+        toast({
+          title: "Erreur",
+          description: "Impossible d'uploader la photo.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('plant-photos')
+        .getPublicUrl(fileName);
+
+      const { error: dbError } = await supabase
+        .from('plant_photos')
+        .insert([{
+          plant_id: plant.id,
+          photo_url: publicUrl,
+          description: `Photo du ${new Date().toLocaleDateString('fr-FR')}`
+        }]);
+
+      if (dbError) {
+        toast({
+          title: "Erreur",
+          description: "Impossible d'enregistrer la photo en base.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Photo ajoutée",
+          description: "La photo a été ajoutée avec succès.",
+        });
+        setSelectedFile(null);
+        fetchPhotoHistory();
+      }
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -76,25 +299,6 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
-
-  // Mock data for plant history
-  const growthHistory = [
-    { date: "2024-06-20", height: 15, width: 8, notes: "Première mesure" },
-    { date: "2024-06-13", height: 12, width: 6, notes: "Croissance normale" },
-    { date: "2024-06-06", height: 8, width: 4, notes: "Début de croissance" }
-  ];
-
-  const wateringHistory = [
-    { date: "2024-06-25", amount: 500, notes: "Arrosage du matin" },
-    { date: "2024-06-23", amount: 750, notes: "Jour de forte chaleur" },
-    { date: "2024-06-21", amount: 500, notes: "Arrosage régulier" }
-  ];
-
-  const photoHistory = [
-    { date: "2024-06-25", url: "/placeholder.svg", notes: "Photo hebdomadaire" },
-    { date: "2024-06-18", url: "/placeholder.svg", notes: "Croissance visible" },
-    { date: "2024-06-11", url: "/placeholder.svg", notes: "Première photo" }
-  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -161,27 +365,39 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-2 bg-green-50 rounded-lg">
-                    <Calendar className="w-4 h-4 text-green-600" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Dernière mesure</p>
-                      <p className="text-xs text-gray-600">Il y a 2 jours - Hauteur: 15cm</p>
+                  {measurementHistory.length > 0 && (
+                    <div className="flex items-center gap-3 p-2 bg-green-50 rounded-lg">
+                      <Calendar className="w-4 h-4 text-green-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Dernière mesure</p>
+                        <p className="text-xs text-gray-600">
+                          {formatDate(measurementHistory[0].measurement_date)} - 
+                          {measurementHistory[0].height && ` Hauteur: ${measurementHistory[0].height}cm`}
+                          {measurementHistory[0].width && ` Largeur: ${measurementHistory[0].width}cm`}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-2 bg-blue-50 rounded-lg">
-                    <Droplets className="w-4 h-4 text-blue-600" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Dernier arrosage</p>
-                      <p className="text-xs text-gray-600">Hier - 500ml</p>
+                  )}
+                  {wateringHistory.length > 0 && (
+                    <div className="flex items-center gap-3 p-2 bg-blue-50 rounded-lg">
+                      <Droplets className="w-4 h-4 text-blue-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Dernier arrosage</p>
+                        <p className="text-xs text-gray-600">
+                          {formatDate(wateringHistory[0].watering_date)} - {wateringHistory[0].amount}ml
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-2 bg-orange-50 rounded-lg">
-                    <Camera className="w-4 h-4 text-orange-600" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Dernière photo</p>
-                      <p className="text-xs text-gray-600">Il y a 3 jours</p>
+                  )}
+                  {photoHistory.length > 0 && (
+                    <div className="flex items-center gap-3 p-2 bg-orange-50 rounded-lg">
+                      <Camera className="w-4 h-4 text-orange-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Dernière photo</p>
+                        <p className="text-xs text-gray-600">{formatDate(photoHistory[0].created_at)}</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -243,18 +459,26 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {growthHistory.map((record, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-sm">{formatDate(record.date)}</p>
-                        <p className="text-xs text-gray-600">{record.notes}</p>
+                  {measurementHistory.length === 0 ? (
+                    <p className="text-gray-500 text-center">Aucune mesure enregistrée</p>
+                  ) : (
+                    measurementHistory.map((record) => (
+                      <div key={record.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-sm">{formatDate(record.measurement_date)}</p>
+                          <p className="text-xs text-gray-600">{record.notes}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium">
+                            {record.height && `${record.height}cm`}
+                            {record.height && record.width && ' × '}
+                            {record.width && `${record.width}cm`}
+                          </p>
+                          <p className="text-xs text-gray-600">H × L</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium">{record.height}cm × {record.width}cm</p>
-                        <p className="text-xs text-gray-600">H × L</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -279,6 +503,7 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
                       value={watering.amount}
                       onChange={(e) => setWatering(prev => ({ ...prev, amount: e.target.value }))}
                       placeholder="500"
+                      required
                     />
                   </div>
                   <div>
@@ -304,18 +529,22 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {wateringHistory.map((record, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-sm">{formatDate(record.date)}</p>
-                        <p className="text-xs text-gray-600">{record.notes}</p>
+                  {wateringHistory.length === 0 ? (
+                    <p className="text-gray-500 text-center">Aucun arrosage enregistré</p>
+                  ) : (
+                    wateringHistory.map((record) => (
+                      <div key={record.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-sm">{formatDate(record.watering_date)}</p>
+                          <p className="text-xs text-gray-600">{record.notes}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium">{record.amount}ml</p>
+                          <p className="text-xs text-gray-600">Quantité</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium">{record.amount}ml</p>
-                        <p className="text-xs text-gray-600">Quantité</p>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -331,12 +560,46 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
-                  <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600 mb-2">Ajoutez une nouvelle photo de votre plante</p>
-                  <Button variant="outline" size="sm">
-                    Choisir une photo
-                  </Button>
+                <div className="space-y-4">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
+                    <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600 mb-2">Ajoutez une nouvelle photo de votre plante</p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      id="photo-upload"
+                    />
+                    <Label htmlFor="photo-upload" className="cursor-pointer">
+                      <Button variant="outline" size="sm" asChild>
+                        <span>Choisir une photo</span>
+                      </Button>
+                    </Label>
+                  </div>
+                  {selectedFile && (
+                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                      <span className="text-sm">{selectedFile.name}</span>
+                      <Button 
+                        onClick={handlePhotoUpload} 
+                        disabled={isUploading}
+                        size="sm"
+                        className="bg-orange-600 hover:bg-orange-700"
+                      >
+                        {isUploading ? (
+                          <>
+                            <Upload className="w-4 h-4 mr-2 animate-spin" />
+                            Upload...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Uploader
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -347,23 +610,27 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
                 <CardTitle className="text-lg">Galerie photos</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {photoHistory.map((photo, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                        <img
-                          src={photo.url}
-                          alt={`Photo du ${photo.date}`}
-                          className="w-full h-full object-cover"
-                        />
+                {photoHistory.length === 0 ? (
+                  <p className="text-gray-500 text-center">Aucune photo enregistrée</p>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {photoHistory.map((photo) => (
+                      <div key={photo.id} className="space-y-2">
+                        <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                          <img
+                            src={photo.photo_url}
+                            alt={photo.description || `Photo du ${formatDate(photo.created_at)}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs font-medium">{formatDate(photo.created_at)}</p>
+                          <p className="text-xs text-gray-600">{photo.description}</p>
+                        </div>
                       </div>
-                      <div className="text-center">
-                        <p className="text-xs font-medium">{formatDate(photo.date)}</p>
-                        <p className="text-xs text-gray-600">{photo.notes}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
