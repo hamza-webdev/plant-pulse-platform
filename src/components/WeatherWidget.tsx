@@ -1,4 +1,5 @@
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Thermometer, Droplets, Cloud, Sun, CloudRain, AlertTriangle } from "lucide-react";
@@ -8,28 +9,158 @@ interface WeatherWidgetProps {
   userCountry?: string;
 }
 
+interface WeatherData {
+  temperature: number;
+  humidity: number;
+  condition: string;
+  location: string;
+  alerts: string[];
+}
+
+interface ForecastData {
+  day: string;
+  temp: number;
+  humidity: number;
+  condition: string;
+  alert?: boolean;
+}
+
 const WeatherWidget = ({ userCity, userCountry }: WeatherWidgetProps) => {
-  // Utiliser la ville de l'utilisateur ou une valeur par défaut
+  const [currentWeather, setCurrentWeather] = useState<WeatherData | null>(null);
+  const [forecast, setForecast] = useState<ForecastData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const API_KEY = "5edade35f3f859474f7beb2931ff9dcd";
   const location = userCity && userCountry 
     ? `${userCity}, ${userCountry}` 
     : "Tunis, Tunisie";
 
-  // Mock weather data - in a real app, this would come from OpenWeatherMap API
-  // Les données seraient récupérées en fonction de la localisation de l'utilisateur
-  const currentWeather = {
-    temperature: 24,
-    humidity: 65,
-    condition: "partly-cloudy",
-    location: location,
-    alerts: userCity ? [`Forte chaleur prévue demain à ${userCity} (+35°C)`] : ["Forte chaleur prévue demain (+35°C)"]
+  useEffect(() => {
+    fetchWeatherData();
+  }, [userCity, userCountry]);
+
+  const getCoordinates = async (cityName: string, countryName: string) => {
+    try {
+      const response = await fetch(
+        `https://api.openweathermap.org/geo/1.0/direct?q=${cityName},${countryName}&limit=1&appid=${API_KEY}`
+      );
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        return { lat: data[0].lat, lon: data[0].lon };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting coordinates:', error);
+      return null;
+    }
   };
 
-  const forecast = [
-    { day: "Aujourd'hui", temp: 24, humidity: 65, condition: "partly-cloudy" },
-    { day: "Demain", temp: 35, humidity: 45, condition: "sunny", alert: true },
-    { day: "Après-demain", temp: 28, humidity: 60, condition: "cloudy" },
-    { day: "Vendredi", temp: 22, humidity: 75, condition: "rainy" }
-  ];
+  const fetchWeatherData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Utiliser les coordonnées de la ville de l'utilisateur ou Tunis par défaut
+      let coordinates;
+      if (userCity && userCountry) {
+        coordinates = await getCoordinates(userCity, userCountry);
+      }
+      
+      // Coordonnées par défaut pour Tunis si pas de ville utilisateur ou erreur
+      if (!coordinates) {
+        coordinates = { lat: 36.8065, lon: 10.1815 }; // Tunis
+      }
+
+      // Récupérer la météo actuelle
+      const currentResponse = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${coordinates.lat}&lon=${coordinates.lon}&appid=${API_KEY}&units=metric&lang=fr`
+      );
+      const currentData = await currentResponse.json();
+
+      // Récupérer les prévisions 5 jours
+      const forecastResponse = await fetch(
+        `https://api.openweathermap.org/data/2.5/forecast?lat=${coordinates.lat}&lon=${coordinates.lon}&appid=${API_KEY}&units=metric&lang=fr`
+      );
+      const forecastData = await forecastResponse.json();
+
+      if (currentData && forecastData) {
+        // Traiter les données météo actuelles
+        const weatherCondition = getWeatherCondition(currentData.weather[0].main);
+        const alerts = [];
+        
+        // Vérifier s'il y a des alertes de température élevée
+        if (currentData.main.temp > 35) {
+          alerts.push(`Forte chaleur à ${location} (${Math.round(currentData.main.temp)}°C)`);
+        }
+
+        setCurrentWeather({
+          temperature: Math.round(currentData.main.temp),
+          humidity: currentData.main.humidity,
+          condition: weatherCondition,
+          location: location,
+          alerts: alerts
+        });
+
+        // Traiter les prévisions (prendre un élément par jour)
+        const dailyForecasts: ForecastData[] = [];
+        const processedDays = new Set();
+        
+        forecastData.list.forEach((item: any, index: number) => {
+          const date = new Date(item.dt * 1000);
+          const dayKey = date.toDateString();
+          
+          if (!processedDays.has(dayKey) && dailyForecasts.length < 4) {
+            processedDays.add(dayKey);
+            
+            let dayName;
+            if (index === 0) {
+              dayName = "Aujourd'hui";
+            } else if (index <= 8) {
+              dayName = "Demain";
+            } else {
+              dayName = date.toLocaleDateString('fr-FR', { weekday: 'long' });
+            }
+
+            const temp = Math.round(item.main.temp);
+            const alert = temp > 35;
+
+            dailyForecasts.push({
+              day: dayName,
+              temp: temp,
+              humidity: item.main.humidity,
+              condition: getWeatherCondition(item.weather[0].main),
+              alert: alert
+            });
+          }
+        });
+
+        setForecast(dailyForecasts);
+      }
+    } catch (error) {
+      console.error('Error fetching weather data:', error);
+      setError('Impossible de charger les données météo');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getWeatherCondition = (main: string): string => {
+    switch (main.toLowerCase()) {
+      case 'clear':
+        return 'sunny';
+      case 'clouds':
+        return 'partly-cloudy';
+      case 'rain':
+      case 'drizzle':
+        return 'rainy';
+      case 'snow':
+        return 'cloudy';
+      default:
+        return 'partly-cloudy';
+    }
+  };
 
   const getWeatherIcon = (condition: string) => {
     switch (condition) {
@@ -60,6 +191,40 @@ const WeatherWidget = ({ userCity, userCountry }: WeatherWidgetProps) => {
         return "Ensoleillé";
     }
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="ml-3 text-gray-600">Chargement de la météo...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <Card className="bg-red-50 border-red-200">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
+              <p className="text-red-700">{error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!currentWeather) {
+    return null;
+  }
 
   return (
     <div className="space-y-4">
