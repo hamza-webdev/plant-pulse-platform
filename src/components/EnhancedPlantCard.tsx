@@ -21,12 +21,14 @@ interface Plant {
 
 interface EnhancedPlantCardProps {
   plant: Plant;
+  currentTemperature?: number;
 }
 
-const EnhancedPlantCard = ({ plant }: EnhancedPlantCardProps) => {
+const EnhancedPlantCard = ({ plant, currentTemperature }: EnhancedPlantCardProps) => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [plantAdvice, setPlantAdvice] = useState<string>("");
   const [isLoadingAdvice, setIsLoadingAdvice] = useState(false);
+  const [measurements, setMeasurements] = useState<any[]>([]);
   const { toast } = useToast();
 
   const getStatusColor = (status: string) => {
@@ -90,7 +92,17 @@ const EnhancedPlantCard = ({ plant }: EnhancedPlantCardProps) => {
     const daysOld = getDaysOld(plant.plantingDate);
     
     // Base progression sur les jours (croissance typique sur 120 jours)
-    const baseProgress = Math.min((daysOld / 120) * 100, 100);
+    let baseProgress = Math.min((daysOld / 120) * 100, 100);
+    
+    // Ajuster selon les mesures si disponibles
+    if (measurements.length > 0) {
+      const latestMeasurement = measurements[0];
+      if (latestMeasurement.height) {
+        // Considérer qu'une plante de 50cm est à 100% de croissance
+        const heightProgress = Math.min((latestMeasurement.height / 50) * 100, 100);
+        baseProgress = Math.max(baseProgress, heightProgress);
+      }
+    }
     
     // Ajuster selon le statut
     let statusMultiplier = 1;
@@ -98,12 +110,27 @@ const EnhancedPlantCard = ({ plant }: EnhancedPlantCardProps) => {
     else if (plant.status === "needs-water") statusMultiplier = 0.8;
     else if (plant.status === "attention") statusMultiplier = 0.6;
     
-    // Prendre en compte la croissance existante si elle est définie
-    const finalProgress = plant.growth > 0 
-      ? Math.max(plant.growth, baseProgress * statusMultiplier)
-      : baseProgress * statusMultiplier;
-    
+    const finalProgress = baseProgress * statusMultiplier;
     return Math.min(Math.round(finalProgress), 100);
+  };
+
+  const fetchMeasurements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('plant_measurements')
+        .select('*')
+        .eq('plant_id', plant.id)
+        .order('measurement_date', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error('Error fetching measurements:', error);
+      } else {
+        setMeasurements(data || []);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
   };
 
   const generatePlantAdvice = async () => {
@@ -117,28 +144,35 @@ const EnhancedPlantCard = ({ plant }: EnhancedPlantCardProps) => {
           variety: plant.variety,
           plantingDate: plant.plantingDate,
           location: plant.location,
-          status: plant.status
+          status: plant.status,
+          measurements: measurements,
+          temperature: currentTemperature
         }
       });
 
       if (error) {
         console.error('Error generating advice:', error);
-        setPlantAdvice("Conseil non disponible pour le moment.");
+        setPlantAdvice("Conseil non disponible pour le moment. Veuillez réessayer.");
       } else {
         setPlantAdvice(data.advice);
       }
     } catch (error) {
       console.error('Error:', error);
-      setPlantAdvice("Conseil non disponible pour le moment.");
+      setPlantAdvice("Conseil non disponible pour le moment. Veuillez réessayer.");
     } finally {
       setIsLoadingAdvice(false);
     }
   };
 
   useEffect(() => {
-    // Générer le conseil automatiquement au chargement
-    generatePlantAdvice();
+    fetchMeasurements();
   }, [plant.id]);
+
+  useEffect(() => {
+    if (measurements.length >= 0) {
+      generatePlantAdvice();
+    }
+  }, [measurements, plant.id, currentTemperature]);
 
   const smartProgress = calculateSmartProgress();
 
@@ -192,6 +226,16 @@ const EnhancedPlantCard = ({ plant }: EnhancedPlantCardProps) => {
               <MapPin className="w-4 h-4 mr-2" />
               <span>{plant.location}</span>
             </div>
+
+            {/* Affichage des mesures actuelles */}
+            {measurements.length > 0 && (
+              <div className="text-sm text-gray-600">
+                <span className="font-medium">Mesures:</span> 
+                {measurements[0].height && ` H: ${measurements[0].height}cm`}
+                {measurements[0].width && ` L: ${measurements[0].width}cm`}
+                {currentTemperature && ` • Temp: ${currentTemperature}°C`}
+              </div>
+            )}
           </div>
 
           {/* Smart Growth Progress */}
@@ -207,25 +251,26 @@ const EnhancedPlantCard = ({ plant }: EnhancedPlantCardProps) => {
               ></div>
             </div>
             <p className="text-xs text-gray-500">
-              Basée sur l'âge ({getDaysOld(plant.plantingDate)} jours) et l'état de santé
+              Basée sur l'âge ({getDaysOld(plant.plantingDate)} jours), les mesures et l'état de santé
             </p>
           </div>
 
-          {/* AI Plant Advice */}
+          {/* AI Plant Advice - Improved */}
           <div className="bg-gradient-to-r from-blue-50 to-green-50 p-3 rounded-lg border border-blue-100">
             <div className="flex items-start gap-2">
               <Lightbulb className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <p className="text-xs font-medium text-blue-800 mb-1">Conseil IA</p>
+                <p className="text-xs font-medium text-blue-800 mb-1">Diagnostic IA Expert</p>
                 {isLoadingAdvice ? (
                   <div className="flex items-center space-x-1">
                     <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
                     <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
                     <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                    <span className="text-xs text-gray-600 ml-2">Analyse en cours...</span>
                   </div>
                 ) : (
                   <p className="text-xs text-gray-700 leading-relaxed">
-                    {plantAdvice || "Conseil en cours de génération..."}
+                    {plantAdvice || "Diagnostic en cours de génération..."}
                   </p>
                 )}
               </div>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +6,7 @@ import { Thermometer, Droplets, Cloud, Sun, CloudRain, AlertTriangle } from "luc
 interface WeatherWidgetProps {
   userCity?: string;
   userCountry?: string;
+  onTemperatureUpdate?: (temperature: number) => void;
 }
 
 interface WeatherData {
@@ -25,7 +25,7 @@ interface ForecastData {
   alert?: boolean;
 }
 
-const WeatherWidget = ({ userCity, userCountry }: WeatherWidgetProps) => {
+const WeatherWidget = ({ userCity, userCountry, onTemperatureUpdate }: WeatherWidgetProps) => {
   const [currentWeather, setCurrentWeather] = useState<WeatherData | null>(null);
   const [forecast, setForecast] = useState<ForecastData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,14 +89,20 @@ const WeatherWidget = ({ userCity, userCountry }: WeatherWidgetProps) => {
         // Traiter les données météo actuelles
         const weatherCondition = getWeatherCondition(currentData.weather[0].main);
         const alerts = [];
+        const temperature = Math.round(currentData.main.temp);
+        
+        // Appeler la fonction de callback pour mettre à jour la température
+        if (onTemperatureUpdate) {
+          onTemperatureUpdate(temperature);
+        }
         
         // Vérifier s'il y a des alertes de température élevée
-        if (currentData.main.temp > 35) {
-          alerts.push(`Forte chaleur à ${location} (${Math.round(currentData.main.temp)}°C)`);
+        if (temperature > 35) {
+          alerts.push(`Forte chaleur à ${location} (${temperature}°C)`);
         }
 
         setCurrentWeather({
-          temperature: Math.round(currentData.main.temp),
+          temperature: temperature,
           humidity: currentData.main.humidity,
           condition: weatherCondition,
           location: location,

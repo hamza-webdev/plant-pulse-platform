@@ -35,6 +35,7 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [plants, setPlants] = useState<Plant[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [currentTemperature, setCurrentTemperature] = useState<number | null>(null);
   const [isAddPlantOpen, setIsAddPlantOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -364,7 +365,11 @@ const Dashboard = () => {
 
       <div className="px-4 py-6 space-y-6">
         {/* Section Météo */}
-        <WeatherWidget userCity={userProfile?.city} userCountry={userProfile?.country} />
+        <WeatherWidget 
+          userCity={userProfile?.city} 
+          userCountry={userProfile?.country}
+          onTemperatureUpdate={setCurrentTemperature}
+        />
 
         {/* Statistiques rapides */}
         <div className="grid grid-cols-2 gap-4">
@@ -376,7 +381,9 @@ const Dashboard = () => {
           </Card>
           <Card className="bg-white/70 backdrop-blur-sm">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-blue-600">24°C</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {currentTemperature ? `${currentTemperature}°C` : '24°C'}
+              </p>
               <p className="text-sm text-gray-600">Température</p>
             </CardContent>
           </Card>
@@ -420,7 +427,11 @@ const Dashboard = () => {
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {plants.map((plant) => (
-                <EnhancedPlantCard key={plant.id} plant={plant} />
+                <EnhancedPlantCard 
+                  key={plant.id} 
+                  plant={plant} 
+                  currentTemperature={currentTemperature || undefined}
+                />
               ))}
             </div>
           )}
