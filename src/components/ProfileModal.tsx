@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MapPin, Phone, Mail, User, Camera } from "lucide-react";
+import { MapPin, Phone, Mail, User as UserIcon, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from '@supabase/supabase-js';
@@ -172,7 +172,7 @@ const ProfileModal = ({ isOpen, onClose, user }: ProfileModalProps) => {
                   className="w-full h-full rounded-full object-cover"
                 />
               ) : (
-                <User className="w-10 h-10 text-green-600" />
+                <UserIcon className="w-10 h-10 text-green-600" />
               )}
             </div>
             <Button type="button" variant="outline" size="sm">
@@ -192,7 +192,7 @@ const ProfileModal = ({ isOpen, onClose, user }: ProfileModalProps) => {
                 placeholder="Votre nom complet"
                 className="pl-10"
               />
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             </div>
           </div>
 

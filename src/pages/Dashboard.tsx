@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, User, LogOut, Settings } from "lucide-react";
+import { Plus, User as UserIcon, LogOut, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -182,7 +182,7 @@ const Dashboard = () => {
                 onClick={() => setIsProfileOpen(true)}
                 className="p-2"
               >
-                <User className="w-4 h-4" />
+                <UserIcon className="w-4 h-4" />
               </Button>
               <Button
                 variant="outline"
