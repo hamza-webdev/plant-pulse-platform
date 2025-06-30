@@ -38,43 +38,84 @@ const Dashboard = () => {
   const [isAddPlantOpen, setIsAddPlantOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    // Timeout de sécurité pour éviter le chargement infini
+    const safetyTimeout = setTimeout(() => {
+      console.log('Safety timeout reached, stopping loading');
+      setLoading(false);
+      setAuthChecked(true);
+    }, 10000); // 10 secondes maximum
+
     // Configurer l'écoute des changements d'authentification
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
+        setAuthChecked(true);
         
-        if (!session) {
+        if (!session && event !== 'INITIAL_SESSION') {
+          console.log('No session, redirecting to auth');
+          clearTimeout(safetyTimeout);
+          setLoading(false);
           navigate("/auth");
+        } else if (session) {
+          console.log('Session found, user authenticated');
+          clearTimeout(safetyTimeout);
+          setLoading(false);
         }
       }
     );
 
     // Vérifier la session existante
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (!session) {
-        navigate("/auth");
-      } else {
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('Initial session check:', session?.user?.id, error);
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        setAuthChecked(true);
+        
+        if (!session) {
+          console.log('No initial session, redirecting to auth');
+          clearTimeout(safetyTimeout);
+          setLoading(false);
+          navigate("/auth");
+        } else {
+          console.log('Initial session found');
+          clearTimeout(safetyTimeout);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+        clearTimeout(safetyTimeout);
         setLoading(false);
+        setAuthChecked(true);
+        navigate("/auth");
       }
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    checkSession();
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(safetyTimeout);
+    };
   }, [navigate]);
 
   useEffect(() => {
-    if (user) {
+    if (user && authChecked) {
       fetchPlants();
       fetchUserProfile();
     }
-  }, [user]);
+  }, [user, authChecked]);
 
   const fetchUserProfile = async () => {
     try {
@@ -234,7 +275,8 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) {
+  // Si toujours en chargement après vérification auth
+  if (loading || !authChecked) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center">
         <div className="text-center">
@@ -242,6 +284,27 @@ const Dashboard = () => {
             <span className="text-white font-bold text-2xl">🌱</span>
           </div>
           <p className="text-gray-600">Chargement...</p>
+          {/* Indicateur de progression */}
+          <div className="mt-4 w-32 h-1 bg-gray-200 rounded-full mx-auto overflow-hidden">
+            <div className="h-full bg-green-600 rounded-full animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Si pas d'utilisateur authentifié
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-white font-bold text-2xl">❌</span>
+          </div>
+          <p className="text-gray-600 mb-4">Session expirée</p>
+          <Button onClick={() => navigate("/auth")} className="bg-green-600 hover:bg-green-700">
+            Se reconnecter
+          </Button>
         </div>
       </div>
     );
