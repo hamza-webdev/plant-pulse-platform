@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,14 +57,14 @@ const Index = () => {
     setPlants([...plants, newPlant]);
     setIsAddPlantOpen(false);
     toast({
-      title: "Plante ajoutée avec succès!",
+      title: "Plante ajoutée avec succès !",
       description: `${plantData.name} a été ajouté à votre jardin.`,
     });
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
-      {/* Header */}
+      {/* En-tête */}
       <header className="bg-white shadow-sm border-b border-green-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -73,7 +74,7 @@ const Index = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Nabtati</h1>
-                <p className="text-sm text-gray-600">Votre assistant agricole</p>
+                <p className="text-sm text-gray-600">Votre assistant agricole intelligent</p>
               </div>
             </div>
             <Button
@@ -88,12 +89,12 @@ const Index = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Weather Section */}
+        {/* Section Météo */}
         <div className="mb-8">
           <WeatherWidget />
         </div>
 
-        {/* Stats Overview */}
+        {/* Aperçu des Statistiques */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card className="bg-white/70 backdrop-blur-sm border-green-200">
             <CardContent className="p-4 text-center">
@@ -136,7 +137,7 @@ const Index = () => {
           </Card>
         </div>
 
-        {/* Plants Section */}
+        {/* Section Plantes */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-900">Mes Plantes</h2>
@@ -171,7 +172,7 @@ const Index = () => {
           )}
         </div>
 
-        {/* Recent Activity */}
+        {/* Activité Récente */}
         <Card className="bg-white/70 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-gray-900">Activité Récente</CardTitle>
@@ -194,7 +195,7 @@ const Index = () => {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">Arrosage effectué - Basilic</p>
-                  <p className="text-xs text-gray-600">Hier à 18:30</p>
+                  <p className="text-xs text-gray-600">Hier à 18h30</p>
                 </div>
               </div>
 
