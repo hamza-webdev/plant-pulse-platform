@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,17 +87,26 @@ const Dashboard = () => {
           variant: "destructive"
         });
       } else {
-        const plantsWithPhotos = data?.map(plant => ({
-          id: parseInt(plant.id),
-          name: plant.name,
-          variety: plant.plant_varieties?.name || plant.custom_variety || 'Variété inconnue',
-          plantingDate: plant.planting_date || new Date().toISOString().split('T')[0],
-          location: plant.location || 'Non spécifié',
-          lastPhoto: plant.plant_photos?.find(p => p.is_primary)?.photo_url || '/placeholder.svg',
-          growth: plant.growth || 0,
-          status: plant.status === 'healthy' ? 'healthy' : 
-                  plant.status === 'needs-water' ? 'needs-water' : 'attention'
-        })) || [];
+        const plantsWithPhotos = data?.map(plant => {
+          // Properly map the status to the union type
+          let mappedStatus: "healthy" | "needs-water" | "attention" = "healthy";
+          if (plant.status === "needs-water") {
+            mappedStatus = "needs-water";
+          } else if (plant.status === "attention") {
+            mappedStatus = "attention";
+          }
+
+          return {
+            id: parseInt(plant.id),
+            name: plant.name,
+            variety: plant.plant_varieties?.name || plant.custom_variety || 'Variété inconnue',
+            plantingDate: plant.planting_date || new Date().toISOString().split('T')[0],
+            location: plant.location || 'Non spécifié',
+            lastPhoto: plant.plant_photos?.find(p => p.is_primary)?.photo_url || '/placeholder.svg',
+            growth: plant.growth || 0,
+            status: mappedStatus
+          };
+        }) || [];
         setPlants(plantsWithPhotos);
       }
     } catch (error) {
