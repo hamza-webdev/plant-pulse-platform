@@ -2,8 +2,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -15,6 +13,19 @@ serve(async (req) => {
   }
 
   try {
+    // Get the OpenAI API key from environment
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    if (!openAIApiKey) {
+      console.error('OpenAI API key not found in environment variables');
+      return new Response(JSON.stringify({ 
+        error: 'Configuration manquante. Veuillez contacter l\'administrateur.' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { plantName, variety, plantingDate, location, status, measurements, temperature } = await req.json();
 
     console.log('Received plant data:', { plantName, variety, plantingDate, location, status, measurements, temperature });
@@ -56,7 +67,7 @@ Donne-moi un diagnostic en 3-4 phrases qui inclut :
 
 Réponds en français de manière claire et pratique.`;
 
-    console.log('Sending prompt to OpenAI:', prompt);
+    console.log('Sending prompt to OpenAI...');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -69,23 +80,28 @@ Réponds en français de manière claire et pratique.`;
         messages: [
           { 
             role: 'system', 
-            content: 'Tu es un expert en jardinage avec 20 ans d\'expérience. Donne des conseils précis, pratiques et adaptés à chaque situation. Utilise un ton bienveillant et professionnel. Réponds toujours en français.' 
+            content: 'Tu es un expert en jardinage avec 20 ans d\'expérience. Donne des conseils précis, pratiques et adaptés à chaque situation. Utilise un ton bienveillant et professionnel. Réponds toujours en français en 3-4 phrases maximum.' 
           },
           { role: 'user', content: prompt }
         ],
-        max_tokens: 200,
+        max_tokens: 300,
         temperature: 0.7,
       }),
     });
 
+    console.log('OpenAI response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('OpenAI API error:', response.status, errorText);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('OpenAI response:', data);
+    console.log('OpenAI response received successfully');
 
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Invalid OpenAI response format:', data);
       throw new Error('Invalid response format from OpenAI');
     }
 
@@ -96,7 +112,9 @@ Réponds en français de manière claire et pratique.`;
     });
   } catch (error) {
     console.error('Error generating plant advice:', error);
-    return new Response(JSON.stringify({ error: 'Impossible de générer le conseil pour le moment. Veuillez réessayer.' }), {
+    return new Response(JSON.stringify({ 
+      error: 'Impossible de générer le conseil pour le moment. Veuillez réessayer.' 
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
