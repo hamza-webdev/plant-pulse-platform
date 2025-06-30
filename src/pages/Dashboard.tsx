@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,7 @@ import ProfileModal from "@/components/ProfileModal";
 import WeatherWidget from "@/components/WeatherWidget";
 
 interface Plant {
-  id: string; // Changed from number to string
+  id: string;
   name: string;
   variety: string;
   plantingDate: string;
@@ -119,6 +118,7 @@ const Dashboard = () => {
 
   const fetchPlants = async () => {
     try {
+      console.log('Fetching plants for user:', user?.id);
       const { data, error } = await supabase
         .from('plants')
         .select(`
@@ -136,7 +136,10 @@ const Dashboard = () => {
           variant: "destructive"
         });
       } else {
+        console.log('Plants data fetched:', data);
         const plantsWithPhotos = data?.map(plant => {
+          console.log('Processing plant:', plant.name, 'Photos:', plant.plant_photos);
+          
           // Properly map the status to the union type
           let mappedStatus: "healthy" | "needs-water" | "attention" = "healthy";
           if (plant.status === "needs-water") {
@@ -145,17 +148,38 @@ const Dashboard = () => {
             mappedStatus = "attention";
           }
 
+          // Récupérer la photo principale ou la photo directe de la plante
+          let photoUrl = '/placeholder.svg';
+          
+          // Priorité 1: Photo principale des plant_photos
+          const primaryPhoto = plant.plant_photos?.find(p => p.is_primary);
+          if (primaryPhoto?.photo_url) {
+            photoUrl = primaryPhoto.photo_url;
+          }
+          // Priorité 2: Photo directe de la plante (photo_url)
+          else if (plant.photo_url) {
+            photoUrl = plant.photo_url;
+          }
+          // Priorité 3: Première photo disponible
+          else if (plant.plant_photos && plant.plant_photos.length > 0) {
+            photoUrl = plant.plant_photos[0].photo_url;
+          }
+
+          console.log('Final photo URL for', plant.name, ':', photoUrl);
+
           return {
-            id: plant.id, // Keep as string (UUID)
+            id: plant.id,
             name: plant.name,
             variety: plant.plant_varieties?.name || plant.custom_variety || 'Variété inconnue',
             plantingDate: plant.planting_date || new Date().toISOString().split('T')[0],
             location: plant.location || 'Non spécifié',
-            lastPhoto: plant.plant_photos?.find(p => p.is_primary)?.photo_url || '/placeholder.svg',
+            lastPhoto: photoUrl,
             growth: plant.growth || 0,
             status: mappedStatus
           };
         }) || [];
+        
+        console.log('Final plants array:', plantsWithPhotos);
         setPlants(plantsWithPhotos);
       }
     } catch (error) {
