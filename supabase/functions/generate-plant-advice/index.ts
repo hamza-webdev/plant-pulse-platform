@@ -59,11 +59,10 @@ Informations de la plante :
 - Mesures actuelles : ${measurementInfo}
 - Température ambiante : ${tempInfo}
 
-Donne-moi un diagnostic en 3-4 phrases qui inclut :
+Donne-moi un diagnostic en 2-3 phrases qui inclut :
 1. L'état général de la plante basé sur son âge et ses mesures
 2. Des conseils spécifiques selon la température et la saison
 3. Des recommandations d'arrosage et de soins
-4. Ce à quoi s'attendre pour les prochaines semaines
 
 Réponds en français de manière claire et pratique.`;
 
@@ -80,11 +79,11 @@ Réponds en français de manière claire et pratique.`;
         messages: [
           { 
             role: 'system', 
-            content: 'Tu es un expert en jardinage avec 20 ans d\'expérience. Donne des conseils précis, pratiques et adaptés à chaque situation. Utilise un ton bienveillant et professionnel. Réponds toujours en français en 3-4 phrases maximum.' 
+            content: 'Tu es un expert en jardinage avec 20 ans d\'expérience. Donne des conseils précis, pratiques et adaptés à chaque situation. Utilise un ton bienveillant et professionnel. Réponds toujours en français en 2-3 phrases maximum.' 
           },
           { role: 'user', content: prompt }
         ],
-        max_tokens: 300,
+        max_tokens: 250,
         temperature: 0.7,
       }),
     });
