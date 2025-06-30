@@ -446,6 +446,7 @@ export type Database = {
           location: string | null
           name: string
           notes: string | null
+          photo_url: string | null
           planting_date: string | null
           purchase_price: number | null
           status: string | null
@@ -461,6 +462,7 @@ export type Database = {
           location?: string | null
           name: string
           notes?: string | null
+          photo_url?: string | null
           planting_date?: string | null
           purchase_price?: number | null
           status?: string | null
@@ -476,6 +478,7 @@ export type Database = {
           location?: string | null
           name?: string
           notes?: string | null
+          photo_url?: string | null
           planting_date?: string | null
           purchase_price?: number | null
           status?: string | null
