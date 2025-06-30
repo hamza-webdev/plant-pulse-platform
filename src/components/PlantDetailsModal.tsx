@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -80,7 +79,6 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
 
   const fetchWateringHistory = async () => {
     try {
-      // Use a raw query with proper type casting
       const { data, error } = await supabase.rpc('get_plant_watering', {
         plant_uuid: plant.id
       });
@@ -89,7 +87,8 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
         console.error('Error fetching watering history:', error);
         setWateringHistory([]);
       } else {
-        setWateringHistory(data || []);
+        // Type assertion to ensure proper typing
+        setWateringHistory((data as WateringRecord[]) || []);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -99,7 +98,6 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
 
   const fetchMeasurementHistory = async () => {
     try {
-      // Use a raw query with proper type casting
       const { data, error } = await supabase.rpc('get_plant_measurements', {
         plant_uuid: plant.id
       });
@@ -108,7 +106,8 @@ const PlantDetailsModal = ({ plant, isOpen, onClose }: PlantDetailsModalProps) =
         console.error('Error fetching measurement history:', error);
         setMeasurementHistory([]);
       } else {
-        setMeasurementHistory(data || []);
+        // Type assertion to ensure proper typing
+        setMeasurementHistory((data as MeasurementRecord[]) || []);
       }
     } catch (error) {
       console.error('Error:', error);

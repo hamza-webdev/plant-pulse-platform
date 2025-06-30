@@ -207,6 +207,44 @@ export type Database = {
           },
         ]
       }
+      plant_measurements: {
+        Row: {
+          created_at: string
+          height: number | null
+          id: string
+          measurement_date: string
+          notes: string | null
+          plant_id: string
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          height?: number | null
+          id?: string
+          measurement_date?: string
+          notes?: string | null
+          plant_id: string
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          height?: number | null
+          id?: string
+          measurement_date?: string
+          notes?: string | null
+          plant_id?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plant_measurements_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plant_photos: {
         Row: {
           created_at: string
@@ -265,6 +303,41 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      plant_watering: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          plant_id: string
+          watering_date: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          plant_id: string
+          watering_date?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          plant_id?: string
+          watering_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plant_watering_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "plants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       plante_profile: {
         Row: {
@@ -489,9 +562,41 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_plant_measurement: {
+        Args: {
+          plant_uuid: string
+          height_cm?: number
+          width_cm?: number
+          note_text?: string
+        }
+        Returns: string
+      }
+      add_plant_watering: {
+        Args: { plant_uuid: string; amount_ml: number; note_text?: string }
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_plant_measurements: {
+        Args: { plant_uuid: string }
+        Returns: {
+          id: string
+          height: number
+          width: number
+          notes: string
+          measurement_date: string
+        }[]
+      }
+      get_plant_watering: {
+        Args: { plant_uuid: string }
+        Returns: {
+          id: string
+          amount: number
+          notes: string
+          watering_date: string
+        }[]
       }
     }
     Enums: {
